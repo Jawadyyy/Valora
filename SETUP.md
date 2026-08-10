@@ -64,9 +64,14 @@ These pull from valorant-api.com — no key, no login, no risk. They live in
 | Command | What |
 |---|---|
 | `/rank <name> <tag> [region]` | Rank, RR, peak + K/D, HS%, ACS, W-L from recent comp games |
+| `/matches [name] [tag] [region]` | Last 5 competitive games — map, agent, KDA, ACS, HS%, W/L |
+| `/mmr-history [name] [tag] [region]` | RR over time — unicode sparkline, recent RR changes, current rank |
 | `/crosshair <code>` | Render a crosshair from its in-game share code |
 | `/featured` | Current bundle — VP + PKR estimate + item list |
 | `/status [region]` | Riot incidents/maintenance with detail (which server, which agent) |
+
+`/matches` and `/mmr-history` default to your `/link-riot` account when you omit
+name/tag; pass a name + tag (+ region) to look up anyone. Both live in `stats.py`.
 
 Get the key from [Henrik's docs](https://docs.henrikdev.xyz) (their Discord).
 Without the key these four reply asking you to set it; the rest of the bot works

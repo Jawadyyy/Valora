@@ -520,6 +520,53 @@ def test_tier_names_cover_all_ranks():
         assert rr.base_tier(full) is not None, full
 
 
+# --- stats: per-game history + RR sparkline -------------------------------
+
+import stats as stx
+
+
+def test_format_match_win():
+    # shape verified live against Henrik stored-matches
+    m = {"meta": {"map": {"name": "Split"}, "mode": "Competitive"},
+         "stats": {"team": "Red", "character": {"name": "Raze"}, "score": 7178,
+                   "kills": 25, "deaths": 18, "assists": 6,
+                   "shots": {"head": 7, "body": 65, "leg": 4}},
+         "teams": {"red": 13, "blue": 11}}
+    f = stx.format_match(m)
+    assert f["map"] == "Split" and f["agent"] == "Raze"
+    assert f["kda"] == "25/18/6"
+    assert f["acs"] == round(7178 / 24)       # score / (13+11) rounds
+    assert f["hs"] == round(100 * 7 / 76)     # head / (head+body+leg)
+    assert f["result"] == "W" and f["score"] == "13-11"
+
+
+def test_format_match_loss_and_missing():
+    # Blue team that lost; and no map/agent/shots -> safe defaults, no raise
+    m = {"meta": {}, "stats": {"team": "Blue"}, "teams": {"red": 13, "blue": 5}}
+    f = stx.format_match(m)
+    assert f["result"] == "L" and f["score"] == "5-13"
+    assert f["map"] == "?" and f["agent"] == "?"
+    assert f["kda"] == "0/0/0" and f["hs"] == 0 and f["acs"] == 0
+
+
+def test_sparkline_empty():
+    assert stx.sparkline([]) == ""
+
+
+def test_sparkline_single():
+    assert stx.sparkline([42]) == "▁"      # one value -> lowest bar, no div-by-zero
+
+
+def test_sparkline_flat():
+    assert stx.sparkline([10, 10, 10]) == "▁▁▁"   # no range -> all lowest
+
+
+def test_sparkline_normal():
+    # 8 bars, scaled min..max: 0->▁, 50->▅ (round(3.5)=4), 100->█
+    assert stx.sparkline([0, 50, 100]) == "▁▅█"
+    assert len(stx.sparkline([1, 2, 3, 4, 5])) == 5
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:

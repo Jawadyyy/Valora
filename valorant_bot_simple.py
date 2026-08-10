@@ -525,6 +525,10 @@ esports.register(bot)
 import rankroles
 rankroles.register(bot)
 
+# Player stats (matches / mmr-history) - Henrik stored history, /link-riot identity.
+import stats
+stats.register(bot)
+
 
 @bot.tree.command(description="Link your account with your Riot cookies (run /login-help first)")
 @app_commands.describe(cookies="Your Riot cookie header - never your password")
