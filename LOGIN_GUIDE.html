@@ -1,0 +1,356 @@
+<title>valoskin — link your account</title>
+<style>
+  :root {
+    --ground: #0e1216;
+    --panel: #161c22;
+    --panel-2: #1d252d;
+    --line: #2b353f;
+    --ink: #eef1f3;
+    --ink-dim: #9aa7b2;
+    --ink-faint: #6b7883;
+    --red: #ff4655;
+    --red-deep: #d63a48;
+    --steel: #7fa8b8;
+    --good: #4fd18b;
+    --mono: ui-monospace, "Cascadia Code", "SF Mono", "Roboto Mono", Menlo, Consolas, monospace;
+    --sans: "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --ground: #f0ece3;
+      --panel: #fbf9f5;
+      --panel-2: #f4f0e8;
+      --line: #ddd6c9;
+      --ink: #171b1f;
+      --ink-dim: #4f5a63;
+      --ink-faint: #8a939b;
+      --red: #d63a48;
+      --red-deep: #b42d3a;
+      --steel: #3d6b7d;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0e1216; --panel: #161c22; --panel-2: #1d252d; --line: #2b353f;
+    --ink: #eef1f3; --ink-dim: #9aa7b2; --ink-faint: #6b7883;
+    --red: #ff4655; --red-deep: #d63a48; --steel: #7fa8b8;
+  }
+  :root[data-theme="light"] {
+    --ground: #f0ece3; --panel: #fbf9f5; --panel-2: #f4f0e8; --line: #ddd6c9;
+    --ink: #171b1f; --ink-dim: #4f5a63; --ink-faint: #8a939b;
+    --red: #d63a48; --red-deep: #b42d3a; --steel: #3d6b7d;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: var(--sans); line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  /* ---- masthead ---- */
+  .mast { margin-bottom: 8px; }
+  .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--red);
+    display: inline-flex; align-items: center; gap: 9px;
+  }
+  .kicker::before {
+    content: ""; width: 22px; height: 2px; background: var(--red);
+  }
+  h1 {
+    font-family: var(--sans); font-weight: 800;
+    font-size: clamp(30px, 6vw, 46px); line-height: 1.02;
+    letter-spacing: -.02em; text-wrap: balance;
+    margin: 16px 0 14px; text-transform: uppercase;
+  }
+  h1 .thin { font-weight: 300; color: var(--ink-dim); }
+  .lede {
+    font-size: 17px; color: var(--ink-dim); max-width: 56ch;
+    margin: 0 0 10px;
+  }
+  .meta {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 20px;
+    padding-top: 18px; border-top: 1px solid var(--line);
+  }
+  .meta b { color: var(--steel); font-weight: 600; }
+
+  /* ---- reassurance strip ---- */
+  .safe {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px;
+    background: var(--line); border: 1px solid var(--line);
+    margin: 34px 0 44px;
+  }
+  .safe div {
+    background: var(--panel); padding: 15px 16px;
+  }
+  .safe .t {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--good); margin-bottom: 4px;
+  }
+  .safe .d { font-size: 13px; color: var(--ink-dim); line-height: 1.45; }
+  @media (max-width: 560px) { .safe { grid-template-columns: 1fr; } }
+
+  /* ---- steps ---- */
+  .step {
+    display: grid; grid-template-columns: 46px 1fr; gap: 20px;
+    padding: 30px 0; border-top: 1px solid var(--line);
+  }
+  .num {
+    font-family: var(--mono); font-weight: 700; font-size: 15px;
+    color: var(--red); padding-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .num small { display: block; color: var(--ink-faint); font-weight: 400; font-size: 10px; letter-spacing: .1em; margin-top: 3px; }
+  .step h2 {
+    font-size: 20px; font-weight: 700; margin: 0 0 8px; letter-spacing: -.01em;
+    text-wrap: balance;
+  }
+  .step p { margin: 0 0 12px; color: var(--ink-dim); font-size: 15.5px; }
+  .step p:last-child { margin-bottom: 0; }
+  .step strong { color: var(--ink); font-weight: 650; }
+
+  .fig {
+    margin: 6px 0 14px; border: 1px solid var(--line); background: var(--panel);
+    border-radius: 3px; overflow: hidden;
+  }
+  .fig svg { display: block; width: 100%; height: auto; }
+  /* SVG presentation attributes can't read CSS vars — drive fills via classes. */
+  .fig svg text { font-family: var(--mono); }
+  .fig svg .t-sans { font-family: var(--sans); }
+  .d-bg   { fill: var(--panel-2); }
+  .d-bar  { fill: var(--ground); }
+  .d-field{ fill: var(--ground); stroke: var(--line); }
+  .d-line { fill: var(--line); }
+  .d-ink  { fill: var(--ink); }
+  .d-dim  { fill: var(--ink-dim); }
+  .d-faint{ fill: var(--ink-faint); }
+  .d-red  { fill: var(--red); }
+  .d-steel{ fill: var(--steel); }
+  .d-good { fill: var(--good); }
+  .s-red    { fill: none; stroke: var(--red); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .d-redfill{ fill: var(--red); opacity: .14; }
+  .d-redbar { fill: var(--red); }
+
+  .callout {
+    display: flex; gap: 11px; align-items: flex-start;
+    background: var(--panel-2); border-left: 2px solid var(--red);
+    padding: 12px 15px; margin: 4px 0 0; font-size: 14px; color: var(--ink-dim);
+  }
+  .callout.ok { border-left-color: var(--good); }
+  .callout .ic {
+    font-family: var(--mono); font-weight: 700; color: var(--red);
+    flex-shrink: 0; font-size: 13px; line-height: 1.7;
+  }
+  .callout.ok .ic { color: var(--good); }
+
+  kbd {
+    font-family: var(--mono); font-size: 12px; background: var(--panel-2);
+    border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 4px; padding: 1px 7px; color: var(--ink);
+    white-space: nowrap;
+  }
+  code {
+    font-family: var(--mono); font-size: 13px; color: var(--steel);
+    background: var(--panel-2); padding: 1px 6px; border-radius: 3px;
+    word-break: break-word;
+  }
+
+  /* ---- final command ---- */
+  .final {
+    margin-top: 44px; border: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    padding: 28px; position: relative;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
+  }
+  .final .kicker { color: var(--good); }
+  .final .kicker::before { background: var(--good); }
+  .final h2 { font-size: 22px; margin: 12px 0 6px; text-transform: uppercase; letter-spacing: -.01em; }
+  .final p { color: var(--ink-dim); font-size: 15px; margin: 0 0 16px; }
+  .cmd {
+    font-family: var(--mono); font-size: 14px; background: var(--ground);
+    border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px;
+    color: var(--ink); overflow-x: auto; white-space: nowrap;
+  }
+  .cmd .c { color: var(--red); }
+  .cmd .a { color: var(--ink-faint); }
+
+  footer {
+    margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--ink-faint); line-height: 1.6;
+  }
+  footer b { color: var(--steel); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .step, .safe, .final, .mast { animation: rise .5s cubic-bezier(.2,.7,.3,1) both; }
+    .step:nth-child(n) { animation-delay: .04s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+
+<div class="wrap">
+  <div class="mast">
+    <span class="kicker">valoskin bot · team hex</span>
+    <h1>Link your account <span class="thin">in one go</span></h1>
+    <p class="lede">The bot shows your Valorant store in Discord. To do that it needs a one-time
+      handshake with your Riot session — no password, ever. Follow the six steps once and you're done for weeks.</p>
+    <div class="meta">
+      <span><b>Time</b> ~2 minutes</span>
+      <span><b>Need</b> a desktop browser</span>
+      <span><b>Repeat</b> only every few weeks</span>
+    </div>
+  </div>
+
+  <div class="safe">
+    <div><div class="t">No password</div><div class="d">You log in on Riot's own page. The bot never sees or stores it.</div></div>
+    <div><div class="t">You stay in control</div><div class="d">Sign out of Riot, or run <code>/logout</code>, and the link dies instantly.</div></div>
+    <div><div class="t">2FA is fine</div><div class="d">You complete any captcha or 2FA yourself, like a normal login.</div></div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="step">
+    <div class="num">01<small>SIGN IN</small></div>
+    <div>
+      <h2>Sign in at account.riotgames.com — tick “Remember me”</h2>
+      <p>Open <code>account.riotgames.com</code> and log in as normal. The one thing that matters:
+        <strong>tick “Remember me” before you press sign in.</strong> That's what makes Riot hand out a
+        lasting session. Miss it and the link dies in minutes.</p>
+      <div class="fig">
+        <svg viewBox="0 0 560 190" role="img" aria-label="Riot login form with Remember me checkbox ticked">
+          <rect width="560" height="190" class="d-bg"/>
+          <rect x="150" y="34" width="260" height="30" rx="3" class="d-field"/>
+          <text x="164" y="54" font-size="13" class="d-faint">username</text>
+          <rect x="150" y="74" width="260" height="30" rx="3" class="d-field"/>
+          <text x="164" y="94" font-size="13" class="d-faint">••••••••••</text>
+          <rect x="150" y="118" width="17" height="17" rx="3" class="d-red"/>
+          <path d="M154 126.5 l3 3 l6 -6.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="177" y="131" font-size="13.5" font-weight="700" class="d-ink t-sans">Remember me</text>
+          <rect x="171" y="115" width="150" height="23" class="s-red"/>
+          <text x="437" y="131" font-size="11" class="d-red">← this!</text>
+          <rect x="150" y="150" width="260" height="30" rx="3" class="d-red"/>
+          <text x="280" y="170" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" class="t-sans">Sign in</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step">
+    <div class="num">02<small>OPEN TOOLS</small></div>
+    <div>
+      <h2>Press <kbd>F12</kbd> and click the “Network” tab</h2>
+      <p>This opens your browser's developer panel. It looks technical — you only need one tab in it.
+        Click <strong>Network</strong> at the top and leave the panel open.</p>
+      <div class="fig">
+        <svg viewBox="0 0 560 150" role="img" aria-label="Developer tools tab bar with Network tab selected">
+          <rect width="560" height="150" class="d-bg"/>
+          <rect x="0" y="0" width="560" height="38" class="d-bar"/>
+          <text x="24" y="24" font-size="13" class="d-faint t-sans">Elements</text>
+          <text x="104" y="24" font-size="13" class="d-faint t-sans">Console</text>
+          <text x="186" y="24" font-size="13" font-weight="700" class="d-red t-sans">Network</text>
+          <rect x="178" y="34" width="74" height="3" class="d-redbar"/>
+          <text x="272" y="24" font-size="13" class="d-faint t-sans">Sources</text>
+          <text x="352" y="24" font-size="13" class="d-faint t-sans">Application</text>
+          <g class="d-line">
+            <rect x="24" y="60" width="512" height="12" rx="2"/>
+            <rect x="24" y="84" width="470" height="12" rx="2"/>
+            <rect x="24" y="108" width="500" height="12" rx="2"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step">
+    <div class="num">03<small>TRIGGER</small></div>
+    <div>
+      <h2>In the same tab, visit <code>auth.riotgames.com</code></h2>
+      <p>Type it in the address bar and hit enter. The page will show
+        <strong>“An error occurred! Invalid Request.”</strong></p>
+      <div class="callout ok">
+        <span class="ic">OK</span>
+        <span>That error is exactly what should happen. You're not here to read the page — visiting it
+          just fires off a request that carries your session, which is what the next step reads.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step">
+    <div class="num">04<small>SELECT</small></div>
+    <div>
+      <h2>Click the <code>auth.riotgames.com</code> row in the list</h2>
+      <p>The Network panel now shows a list of requests. Click the one named
+        <strong>auth.riotgames.com</strong> — usually the top one. A details pane opens on the side.</p>
+      <div class="fig">
+        <svg viewBox="0 0 560 150" role="img" aria-label="Network request list with auth.riotgames.com row highlighted">
+          <rect width="560" height="150" class="d-bg"/>
+          <rect x="0" y="0" width="560" height="26" class="d-bar"/>
+          <text x="20" y="18" font-size="11" letter-spacing=".1em" class="d-faint">NAME</text>
+          <text x="360" y="18" font-size="11" letter-spacing=".1em" class="d-faint">STATUS</text>
+          <rect x="0" y="32" width="560" height="30" class="d-redfill"/>
+          <rect x="0" y="32" width="3" height="30" class="d-redbar"/>
+          <text x="20" y="51" font-size="13" font-weight="700" class="d-red">auth.riotgames.com</text>
+          <text x="360" y="51" font-size="12" class="d-dim">200</text>
+          <text x="20" y="83" font-size="13" class="d-faint">login</text>
+          <text x="360" y="83" font-size="12" class="d-faint">200</text>
+          <text x="20" y="113" font-size="13" class="d-faint">theme.css</text>
+          <text x="360" y="113" font-size="12" class="d-faint">200</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step">
+    <div class="num">05<small>COPY</small></div>
+    <div>
+      <h2>Find the <code>cookie:</code> row and copy its whole value</h2>
+      <p>In the details pane, scroll to <strong>Request Headers</strong>. Find the row that starts with
+        <code>cookie:</code> and copy everything after it. It's a long line that looks like the one below —
+        copy <strong>all</strong> of it.</p>
+      <div class="fig">
+        <svg viewBox="0 0 560 132" role="img" aria-label="Request Headers section showing the cookie header value">
+          <rect width="560" height="132" class="d-bg"/>
+          <text x="20" y="26" font-size="12" font-weight="700" letter-spacing=".08em" class="d-dim t-sans">▾ REQUEST HEADERS</text>
+          <text x="20" y="52" font-size="12" class="d-faint">host: auth.riotgames.com</text>
+          <rect x="12" y="64" width="536" height="46" rx="3" class="d-field s-red" style="fill:var(--ground)"/>
+          <text x="20" y="82" font-size="12" class="d-steel">cookie:</text>
+          <text x="20" y="99" font-size="11.5" class="d-ink">tdid=aB..; did=9f..; ssid=eyJhbG..; clid=eu1..; csid=k2..</text>
+          <text x="20" y="126" font-size="12" class="d-faint">user-agent: Mozilla/5.0 ...</text>
+        </svg>
+      </div>
+      <div class="callout">
+        <span class="ic">TIP</span>
+        <span>Right-click the <code>cookie</code> row → <strong>Copy value</strong> if your browser offers it —
+          that grabs the whole thing cleanly. Otherwise triple-click the value to select the full line before copying.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step">
+    <div class="num">06<small>PASTE</small></div>
+    <div>
+      <h2>Run <code>/login</code> in Discord and paste it</h2>
+      <p>Back in the Team HEX server, type <code>/login</code>, paste the whole line into the
+        <strong>cookies</strong> box, and send. Your reply is private — nobody else in the channel sees it.
+        The bot replies <strong>“Account linked.”</strong> and you're in.</p>
+    </div>
+  </div>
+
+  <div class="final">
+    <span class="kicker">You're done</span>
+    <h2>Try it out</h2>
+    <p>Once linked, these work instantly — and you never touch the cookie steps again unless you go weeks without using the bot.</p>
+    <div class="cmd"><span class="c">/store</span> <span class="a">· </span><span class="c">/bundles</span> <span class="a">· </span><span class="c">/night-market</span> <span class="a">· </span><span class="c">/alert</span> <span class="a">skin:</span> <span class="c">/daily-shop</span> <span class="a">on</span></div>
+    <footer>
+      <b>Keep that cookie line private.</b> Anyone who has it can act as your Riot account until it expires —
+      treat it exactly like a password. Only ever paste it into the bot's <code>/login</code>, never in a
+      normal chat message. Changed your mind? <code>/logout</code> here, or sign out of Riot in your browser,
+      and it's gone.
+    </footer>
+  </div>
+</div>

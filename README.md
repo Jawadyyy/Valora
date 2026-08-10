@@ -1,0 +1,52 @@
+# valoskin-bot
+
+Discord bot that shows your Valorant daily store and Night Market without
+opening the game client. Built for the Team HEX server.
+
+```
+/login-help          how to get your Riot cookie
+/login <cookies>     link account (once, ephemeral)
+/store               today's 4 skins + prices
+/night-market        discounts, when active
+/alert <skin>        DM me when this skin hits my shop (autocompletes)
+/alerts              list what I'm tracking
+/alert-remove <skin> stop tracking
+/daily-shop <on/off> DM me my shop every day
+/logout              delete stored session and alerts
+
+--- reference (no login, works for anyone) ---
+/skin <name>         image, tier, levels, chromas
+/agent <name>        role + abilities
+/weapon <name>       damage, fire rate, wall pen, cost
+/map <name>          top-down layout + callouts
+/buddy /spray /card /title <name>   cosmetic lookup
+/random-agent        pick a random agent
+/random-loadout      random skins for a full buy
+/trivia [topic]      endless quiz — new question after each answer, streaks + points
+/trivia-leaderboard  top trivia players on the server
+
+--- Henrik (free API key, riot-ID keyed, no cookie) ---
+/rank <name> <tag>   rank, RR, peak + K/D, HS%, ACS, W-L (recent comp)
+/crosshair <code>    render a crosshair image from its share code
+/featured            current bundle + VP/PKR price + items
+/status              Valorant incidents per region, with detail
+
+--- esports ---
+/esports [league]    upcoming & live matches (filter: Americas/EMEA/Pacific/…)
+/live                matches in progress right now
+/results [league]    recent results with scores
+/follow-team <team>  DM me when that team's match finishes (per-user)
+/unfollow-team       stop following
+/follows             list the teams I follow
+```
+
+Python 3.9+ · discord.py · unofficial Riot API · auto-detects region (na/eu/ap/kr).
+
+**No passwords.** Riot's password endpoint now demands an hCaptcha token, so the
+bot uses cookie reauth instead: you sign in on Riot's own login page and give the
+bot the resulting session cookie. It stores no password, works with 2FA, and
+rotates the cookie on every refresh to stay linked.
+
+- **[LOGIN_GUIDE.html](LOGIN_GUIDE.html)** — the picture guide to send teammates
+  ([hosted copy](https://claude.ai/code/artifact/3a2fa014-5bde-415b-8906-f411bad6c821))
+- [SETUP.md](SETUP.md) — install, run, get the cookie, troubleshoot

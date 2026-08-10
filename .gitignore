@@ -1,0 +1,9 @@
+.env
+valorant_users.json
+trivia_scores.json
+esports_follows.json
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.log
