@@ -640,18 +640,42 @@ import premier as pr
 def test_playoff_progress_below():
     p = pr.playoff_progress(540)
     assert p["qualified"] is False
-    assert p["line"] == "540 / 625 — 85 to go"
+    assert p["line"] == "540 / 600 — 60 to go"
 
 
 def test_playoff_progress_at_and_above():
-    assert pr.playoff_progress(625)["qualified"] is True
+    assert pr.playoff_progress(600)["qualified"] is True
     above = pr.playoff_progress(1000)
-    assert above["qualified"] is True and "1000 / 625" in above["line"]
+    assert above["qualified"] is True and "1000 / 600" in above["line"]
 
 
 def test_playoff_progress_none():
     p = pr.playoff_progress(None)
-    assert p["qualified"] is False and p["line"] == "0 / 625 — 625 to go"
+    assert p["qualified"] is False and p["line"] == "0 / 600 — 600 to go"
+
+
+def test_division_name():
+    # Open/Intermediate/Advanced/Elite each = divisions of 5 (1-20);
+    # Contender = 21, Invite = 22 (only 22 appears in *_SUPER conferences)
+    assert pr.division_name(1) == "Open 1"
+    assert pr.division_name(5) == "Open 5"
+    assert pr.division_name(6) == "Intermediate 1"
+    assert pr.division_name(11) == "Advanced 1"
+    assert pr.division_name(15) == "Advanced 5"
+    assert pr.division_name(16) == "Elite 1"
+    assert pr.division_name(20) == "Elite 5"
+    assert pr.division_name(21) == "Contender"
+    assert pr.division_name(22) == "Invite"
+    assert pr.division_name(0) == "Unrated"
+    assert pr.division_name(None) == "Unrated"
+
+
+def test_pretty_conference():
+    assert pr.pretty_conference("AP_OCEANIA_SUPER") == "AP Oceania (Super)"
+    assert pr.pretty_conference("KR_KOREA") == "KR Korea"
+    assert pr.pretty_conference("AP_SOUTH_ASIA_SUPER") == "AP South Asia (Super)"
+    assert pr.pretty_conference("EU_DACH") == "EU Dach"
+    assert pr.pretty_conference("") == "?"
 
 
 if __name__ == "__main__":

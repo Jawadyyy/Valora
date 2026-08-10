@@ -98,8 +98,16 @@ people follow different teams independently.
 
 | Command | What |
 |---|---|
-| `/premier <name> [tag]` | Team roster, division/conference, W-L, and Premier Score vs the 625 playoff line. With a tag it's an exact lookup; without, it searches the exact team name. |
-| `/premier-standings [region]` | Top 15 Premier teams in a region by score |
+| `/premier <name> [tag]` | Roster, rank division (Open→Elite→Contender→Invite), league, W-L, and Premier Score vs the 600 playoff line. With a tag it's an exact lookup; without, it searches the exact team name. |
+| `/premier-standings [region] [conference]` | Top 15 teams in a region, optionally filtered to one league/conference |
+| `/premier-conferences [region]` | List the Premier leagues (conferences) in a region and their host cities |
+
+Premier structure the bot reflects: **6 regions** (ap/na/eu/kr/latam/br), each
+split into **conferences** (leagues, 33 total — e.g. AP Oceania, NA US East),
+each with a top *Super* conference. Teams sit in a **division**: Open,
+Intermediate, Advanced and Elite each span 1–5, then **Contender** (21) and
+**Invite** (22, Super only). The bot shows the named division + league, not the
+raw numbers.
 
 Henrik's Premier data covers rosters, standings, W-L and score — **no future
 match schedule is exposed**, so there are no match reminders (the history

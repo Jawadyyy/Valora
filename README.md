@@ -41,8 +41,9 @@ roles, an esports feed, and a trivia game — all multi-user.
 /status              Valorant incidents per region, with detail
 
 --- premier ---
-/premier <name> [tag]   team roster, division, W-L, Premier Score vs 625 playoff line
-/premier-standings [region]  top Premier teams in a region
+/premier <name> [tag]   roster, rank division (Open→Invite), league, W-L, Premier Score vs 600
+/premier-standings [region] [league]  top teams in a region, optional league filter
+/premier-conferences [region]  list the leagues (conferences) in a region + their cities
 
 --- rank roles (auto-assigned Discord roles) ---
 /link-riot <n> <tag> link your Riot ID (also powers stats/balancer)
@@ -60,7 +61,7 @@ roles, an esports feed, and a trivia game — all multi-user.
 ```
 
 Python 3.9+ · discord.py · unofficial Riot API + Henrik + valorant-api ·
-auto-detects region (na/eu/ap/kr) · 40 slash commands · self-checking test suite
+auto-detects region (na/eu/ap/kr) · 41 slash commands · self-checking test suite
 (`python test_valorant_bot.py`).
 
 **No passwords.** Riot's password endpoint now demands an hCaptcha token, so the
