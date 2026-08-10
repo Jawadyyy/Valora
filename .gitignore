@@ -2,6 +2,7 @@
 valorant_users.json
 trivia_scores.json
 esports_follows.json
+rankroles.json
 __pycache__/
 *.py[cod]
 .venv/

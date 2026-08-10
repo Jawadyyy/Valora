@@ -499,6 +499,27 @@ def test_match_ts_bad_date():
     assert es.match_ts({"date": "2026-08-09T21:00:00+00:00"}) > 0
 
 
+# --- rank roles -----------------------------------------------------------
+
+import rankroles as rr
+
+
+def test_base_tier():
+    assert rr.base_tier("Platinum 2") == "Platinum"
+    assert rr.base_tier("Radiant") == "Radiant"
+    assert rr.base_tier("Immortal 3") == "Immortal"
+    assert rr.base_tier("Unranked") is None
+    assert rr.base_tier(None) is None
+    assert rr.base_tier("") is None
+
+
+def test_tier_names_cover_all_ranks():
+    # every real Valorant tier's first word must map to a role
+    for full in ["Iron 1", "Bronze 3", "Silver 2", "Gold 1", "Platinum 3",
+                 "Diamond 2", "Ascendant 1", "Immortal 3", "Radiant"]:
+        assert rr.base_tier(full) is not None, full
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:

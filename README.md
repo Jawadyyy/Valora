@@ -1,7 +1,13 @@
 # valoskin-bot
 
-Discord bot that shows your Valorant daily store and Night Market without
-opening the game client. Built for the Team HEX server.
+A Valorant Discord bot for the Team HEX community. Started as a store viewer,
+now covers store, item/agent/map reference, live rank & match stats, auto rank
+roles, an esports feed, and a trivia game — all multi-user.
+
+**Three data sources, three trust levels:**
+- **valorant-api.com** — static assets (skins, agents, maps). No key, no login, no risk.
+- **Henrik API** — rank, stats, esports, crosshair. A free API key, keyed by Riot ID (no cookie).
+- **In-game API** — your personal store/night-market. Needs your Riot session cookie (per-user).
 
 ```
 /login-help          how to get your Riot cookie
@@ -31,6 +37,11 @@ opening the game client. Built for the Team HEX server.
 /featured            current bundle + VP/PKR price + items
 /status              Valorant incidents per region, with detail
 
+--- rank roles (auto-assigned Discord roles) ---
+/link-riot <n> <tag> link your Riot ID (also powers stats/balancer)
+/rank-role           refresh your rank role now
+/setup-rank-roles    admin: create the tier roles (needs Manage Roles)
+
 --- esports ---
 /esports [league]    upcoming & live matches (filter: Americas/EMEA/Pacific/…)
 /live                matches in progress right now
@@ -40,7 +51,9 @@ opening the game client. Built for the Team HEX server.
 /follows             list the teams I follow
 ```
 
-Python 3.9+ · discord.py · unofficial Riot API · auto-detects region (na/eu/ap/kr).
+Python 3.9+ · discord.py · unofficial Riot API + Henrik + valorant-api ·
+auto-detects region (na/eu/ap/kr) · 34 slash commands · self-checking test suite
+(`python test_valorant_bot.py`).
 
 **No passwords.** Riot's password endpoint now demands an hCaptcha token, so the
 bot uses cookie reauth instead: you sign in on Riot's own login page and give the

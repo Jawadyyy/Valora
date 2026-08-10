@@ -69,6 +69,22 @@ def valid_region(region: str) -> str:
     return r if r in REGIONS else DEFAULT_REGION
 
 
+async def fetch_mmr(session, region: str, name: str, tag: str) -> dict | None:
+    """Shared rank lookup used by /rank and the rank-role system.
+    Returns parse_rank(...) or None (bad key / not found / no ranked data)."""
+    if not API_KEY:
+        return None
+    url = f"{BASE}/valorant/v3/mmr/{valid_region(region)}/pc/{name}/{tag.lstrip('#')}"
+    try:
+        async with session.get(url, headers={"Authorization": API_KEY}) as r:
+            if r.status != 200:
+                return None
+            data = await r.json()
+    except aiohttp.ClientError:
+        return None
+    return parse_rank(data.get("data") or {})
+
+
 def en(items: list) -> str | None:
     """Pick the English string from a list of {locale, content} translations."""
     for x in items or []:

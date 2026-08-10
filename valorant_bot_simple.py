@@ -495,10 +495,12 @@ class ValoBot(discord.Client):
             await self.tree.sync()
         daily_job.start()
         esports.start_jobs()
+        rankroles.start_jobs()
 
     async def close(self):
         daily_job.cancel()
         esports.results_job.cancel()
+        rankroles.recheck_job.cancel()
         if self.session:
             await self.session.close()
         await super().close()
@@ -518,6 +520,10 @@ henrik.register(bot)
 # Esports (schedule/results/live/follow-team) - Henrik esports schedule.
 import esports
 esports.register(bot)
+
+# Auto rank roles (link-riot / setup-rank-roles / weekly recheck) - Henrik mmr.
+import rankroles
+rankroles.register(bot)
 
 
 @bot.tree.command(description="Link your account with your Riot cookies (run /login-help first)")

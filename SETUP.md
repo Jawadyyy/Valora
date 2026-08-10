@@ -88,6 +88,23 @@ A background job checks every 30 min and DMs each follower their teams' new
 results. Follows are per-user (`esports_follows.json`, gitignored): different
 people follow different teams independently.
 
+**Auto rank roles** (`rankroles.py`; needs `HENRIK_API_KEY` + the **Manage Roles** permission):
+
+| Command | What |
+|---|---|
+| `/link-riot <name> <tag> [region]` | Link your Riot ID (also used by stats & balancer) |
+| `/rank-role` | Refresh your rank role right now |
+| `/setup-rank-roles` | **Admin** — create the 9 tier roles (Iron→Radiant) on this server |
+
+Setup, once per server:
+1. Give the bot **Manage Roles** (Server Settings → Roles → the bot's role).
+2. Drag the bot's role **above** where the tier roles will sit.
+3. Run `/setup-rank-roles`. Members then `/link-riot` to get their role.
+4. The bot re-checks everyone's rank **weekly** and updates roles automatically.
+
+Links + role config persist in `rankroles.json` (gitignored). Rank data is
+per-Riot-ID via Henrik — no cookie needed, so anyone can use it.
+
 **Not available:** arbitrary skin prices / collection value / savings math —
 Riot removed the upstream Henrik used, so only the *current featured bundle*
 carries prices (shown in `/featured`).
