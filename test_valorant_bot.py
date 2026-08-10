@@ -567,6 +567,93 @@ def test_sparkline_normal():
     assert len(stx.sparkline([1, 2, 3, 4, 5])) == 5
 
 
+# --- leaderboard: tier id -> name, row filtering ---------------------------
+
+def test_tier_name():
+    assert stx.tier_name(27) == "Radiant"
+    assert stx.tier_name(24) == "Immortal 1"
+    assert stx.tier_name(26) == "Immortal 3"
+    assert stx.tier_name(21) == "Ascendant 1"
+    assert stx.tier_name(15) == "Platinum 1"
+    assert stx.tier_name(3) == "Iron 1"
+    assert stx.tier_name(0) == "Unranked"
+    assert stx.tier_name(None) == "Unranked"
+
+
+def _lbp(name, tag, rank, tier, rr, anon=False):
+    return {"name": name, "tag": tag, "leaderboard_rank": rank, "tier": tier,
+            "rr": rr, "is_anonymized": anon}
+
+
+def test_leaderboard_rows_caps_and_names_tier():
+    players = [_lbp("A", "1", 2, 27, 900), _lbp("B", "2", 1, 26, 500),
+               _lbp("C", "3", 3, 24, 100)]
+    rows = stx.leaderboard_rows(players, top=2)
+    assert len(rows) == 2
+    # sorted by leaderboard_rank asc regardless of input order
+    assert rows[0]["rank"] == 1 and rows[0]["name"] == "B" and rows[0]["tier"] == "Immortal 3"
+    assert rows[1]["rank"] == 2 and rows[1]["tier"] == "Radiant"
+
+
+def test_leaderboard_rows_tier_filter_and_anon():
+    players = [_lbp("A", "1", 1, 27, 900),
+               _lbp("B", "2", 2, 26, 500),
+               _lbp("", "", 3, 24, 100, anon=True)]
+    imm = stx.leaderboard_rows(players, tier="Immortal")
+    assert [r["rank"] for r in imm] == [2, 3], "only Immortal tiers kept"
+    assert imm[1]["name"] == "(anonymous)", "hidden name masked, not blank"
+
+
+# --- balancer: snake-draft 10-man split ------------------------------------
+
+def test_balance_even_split():
+    a, b = stx.balance_teams([("p1", 100), ("p2", 90), ("p3", 80), ("p4", 70)])
+    # desc 100,90,80,70 snake-drafted A,B,B,A -> A=[p1,p4], B=[p2,p3]
+    assert a["total"] == 170 and b["total"] == 170
+    assert a["avg"] == 85 and b["avg"] == 85
+    assert {n for n, _ in a["players"]} == {"p1", "p4"}
+
+
+def test_balance_odd_count():
+    a, b = stx.balance_teams([("p1", 100), ("p2", 50), ("p3", 10)])
+    # desc 100,50,10 -> A=[p1], B=[p2,p3]; sizes differ by at most 1
+    assert len(a["players"]) == 1 and len(b["players"]) == 2
+    assert a["total"] == 100 and b["total"] == 60
+
+
+def test_balance_equal_elos_zero_gap():
+    a, b = stx.balance_teams([("w", 50), ("x", 50), ("y", 50), ("z", 50)])
+    assert a["total"] == b["total"] and a["avg"] == 50
+
+
+def test_balance_empty():
+    a, b = stx.balance_teams([])
+    assert a["players"] == [] and b["players"] == []
+    assert a["total"] == 0 and a["avg"] == 0
+
+
+# --- premier: playoff threshold progress -----------------------------------
+
+import premier as pr
+
+
+def test_playoff_progress_below():
+    p = pr.playoff_progress(540)
+    assert p["qualified"] is False
+    assert p["line"] == "540 / 625 — 85 to go"
+
+
+def test_playoff_progress_at_and_above():
+    assert pr.playoff_progress(625)["qualified"] is True
+    above = pr.playoff_progress(1000)
+    assert above["qualified"] is True and "1000 / 625" in above["line"]
+
+
+def test_playoff_progress_none():
+    p = pr.playoff_progress(None)
+    assert p["qualified"] is False and p["line"] == "0 / 625 — 625 to go"
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:

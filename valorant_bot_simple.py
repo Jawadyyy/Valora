@@ -525,9 +525,13 @@ esports.register(bot)
 import rankroles
 rankroles.register(bot)
 
-# Player stats (matches / mmr-history) - Henrik stored history, /link-riot identity.
+# Player stats (matches / mmr-history / leaderboard / balance) - Henrik + /link-riot.
 import stats
 stats.register(bot)
+
+# Premier (team lookup + regional standings) - Henrik premier endpoints.
+import premier
+premier.register(bot)
 
 
 @bot.tree.command(description="Link your account with your Riot cookies (run /login-help first)")

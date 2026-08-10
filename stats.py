@@ -6,6 +6,7 @@ accept a name/tag/region override. Henrik-keyed, no cookie - see henrik.py.
 Wire in from the main file:  import stats; stats.register(bot)
 """
 
+import time
 from itertools import accumulate
 
 import discord
@@ -16,6 +17,14 @@ import rankroles
 
 RED = henrik.RED
 BARS = "▁▂▃▄▅▆▇█"
+
+# competitive tier groups (each spans 3 sub-ranks); id 27 = Radiant, <3 = Unranked
+_TIER_GROUPS = ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond",
+                "Ascendant", "Immortal"]
+
+# regional leaderboard is shared + rarely changes -> cache per region, 5 min
+_LB_TTL = 300
+_lb_cache: dict = {}  # region -> {"at": ts, "data": [players]}
 
 
 # --------------------------------------------------------------------------
@@ -68,6 +77,53 @@ def _resolve(user_id, name, tag, region):
     if not link:
         return None
     return link["name"], link["tag"], henrik.valid_region(region) if region else link["region"]
+
+
+def tier_name(tier_id) -> str:
+    """Competitive tier id -> name. 27 Radiant, 24-26 Immortal 1-3, 3-5 Iron 1-3,
+    anything below 3 (or None) Unranked. The leaderboard gives ids, not names."""
+    if not tier_id or tier_id < 3:
+        return "Unranked"
+    if tier_id >= 27:
+        return "Radiant"
+    return f"{_TIER_GROUPS[(tier_id - 3) // 3]} {(tier_id - 3) % 3 + 1}"
+
+
+def leaderboard_rows(players: list, tier: str | None = None, top: int = 15) -> list[dict]:
+    """Leaderboard players -> [{rank, name, tag, rr, tier}], sorted by rank,
+    optionally filtered to a base tier ('Immortal' keeps Immortal 1/2/3), capped
+    to `top`. Anonymized/blank names become '(anonymous)'."""
+    rows = []
+    for p in sorted(players, key=lambda x: x.get("leaderboard_rank") or 0):
+        tname = tier_name(p.get("tier"))
+        if tier and tname.split()[0].lower() != tier.lower():
+            continue
+        name = "(anonymous)" if p.get("is_anonymized") or not p.get("name") else p["name"]
+        rows.append({"rank": p.get("leaderboard_rank"), "name": name,
+                     "tag": p.get("tag") or "", "rr": p.get("rr"), "tier": tname})
+        if len(rows) >= top:
+            break
+    return rows
+
+
+def balance_teams(players: list) -> tuple[dict, dict]:
+    """(name, elo) pairs -> two rank-balanced teams by snake-drafting elo desc
+    (1st->A, 2nd,3rd->B, 4th,5th->A, …), which keeps sizes within 1 and totals
+    close. Each team: {players:[(name,elo)], total, avg}. Handles odd/empty.
+
+    ponytail: snake draft, not an exhaustive min-gap partition. For <=10 players
+    a brute-force C(n,n/2) search would shave the last few elo off the gap; add
+    it only if perfectly minimal gaps ever matter."""
+    ranked = sorted(players, key=lambda p: p[1], reverse=True)
+    picks = ([], [])
+    for i, p in enumerate(ranked):
+        picks[0 if i % 4 in (0, 3) else 1].append(p)
+
+    def pack(team):
+        total = sum(e for _, e in team)
+        return {"players": team, "total": total,
+                "avg": round(total / len(team)) if team else 0}
+    return pack(picks[0]), pack(picks[1])
 
 
 # --------------------------------------------------------------------------
@@ -180,3 +236,94 @@ def register(bot):
         e.add_field(name="Recent changes", value=changes, inline=False)
         e.set_footer(text=reg.upper())
         await interaction.followup.send(embed=e, ephemeral=True)
+
+    # ---- leaderboard -----------------------------------------------------
+    tier_choices = [app_commands.Choice(name=t, value=t) for t in
+                    ("Radiant", "Immortal", "Ascendant", "Diamond", "Platinum",
+                     "Gold", "Silver", "Bronze", "Iron")]
+
+    async def _fetch_leaderboard(reg):
+        """Cached (5 min) leaderboard players for a region. None on failure with
+        no cached copy; a stale copy if the refresh fails."""
+        c = _lb_cache.get(reg)
+        if c and time.time() - c["at"] < _LB_TTL:
+            return c["data"]
+        status, data = await get(f"/valorant/v3/leaderboard/{reg}/pc")
+        if status != 200 or not data:
+            return c["data"] if c else None
+        players = (data.get("data") or {}).get("players") or []
+        _lb_cache[reg] = {"at": time.time(), "data": players}
+        return players
+
+    @bot.tree.command(description="Regional ranked leaderboard — top players")
+    @app_commands.describe(region="Region (default AP)", tier="Filter to a tier")
+    @app_commands.choices(region=region_choices, tier=tier_choices)
+    async def leaderboard(interaction: discord.Interaction,
+                          region: str = henrik.DEFAULT_REGION, tier: str = None):
+        await interaction.response.defer()
+        if not henrik.API_KEY:
+            await interaction.followup.send("Henrik API key not set. Add `HENRIK_API_KEY` to `.env`.")
+            return
+        reg = henrik.valid_region(region)
+        players = await _fetch_leaderboard(reg)
+        if players is None:
+            await interaction.followup.send("Couldn't fetch the leaderboard. Try again later.")
+            return
+        rows = leaderboard_rows(players, tier=tier, top=15)
+        if not rows:
+            await interaction.followup.send(
+                f"No **{tier}** players on the {reg.upper()} leaderboard." if tier
+                else f"The {reg.upper()} leaderboard is empty right now.")
+            return
+        lines = [f"`#{r['rank']:>3}` **{r['name']}**#{r['tag']} · {r['rr']} RR · {r['tier']}"
+                 for r in rows]
+        e = discord.Embed(title=f"{reg.upper()} Leaderboard" + (f" — {tier}" if tier else ""),
+                          description="\n".join(lines), color=RED)
+        e.set_footer(text="Top ranked · cached 5 min")
+        await interaction.followup.send(embed=e)
+
+    # ---- balance ---------------------------------------------------------
+    @bot.tree.command(description="Split your voice channel into two rank-balanced teams")
+    async def balance(interaction: discord.Interaction):
+        await interaction.response.defer()
+        if not henrik.API_KEY:
+            await interaction.followup.send("Henrik API key not set. Add `HENRIK_API_KEY` to `.env`.")
+            return
+        voice = getattr(interaction.user, "voice", None)
+        if not voice or not voice.channel:
+            await interaction.followup.send(
+                "Join a voice channel first — I balance whoever's in it.", ephemeral=True)
+            return
+        links = rankroles.load().get("links") or {}
+        players, skipped = [], []
+        for m in voice.channel.members:
+            if m.bot:
+                continue
+            ident = links.get(str(m.id))
+            if not ident:
+                skipped.append(m.display_name)
+                continue
+            rank = await henrik.fetch_mmr(bot.session, ident["region"], ident["name"], ident["tag"])
+            elo = rank.get("elo") if rank else None
+            if not elo:
+                skipped.append(f"{m.display_name} (unranked)")
+                continue
+            players.append((m.display_name, elo))
+        if len(players) < 2:
+            await interaction.followup.send(
+                "Need at least 2 linked, ranked players in the channel — others run `/link-riot`."
+                + (f"\nSkipped: {', '.join(skipped)}" if skipped else ""))
+            return
+        a, b = balance_teams(players)
+        # avg-elo gap, not total: with an odd count the teams differ by a player,
+        # so the total-elo gap is dominated by size, not by strength.
+        gap = abs(a["avg"] - b["avg"])
+        fmt = lambda team: "\n".join(f"• {n} — {e}" for n, e in team["players"]) or "—"
+        e = discord.Embed(title="Balanced teams", color=RED,
+                          description=f"Avg elo gap: **{gap}**")
+        e.add_field(name=f"Team A · avg {a['avg']} elo", value=fmt(a), inline=True)
+        e.add_field(name=f"Team B · avg {b['avg']} elo", value=fmt(b), inline=True)
+        if skipped:
+            e.add_field(name=f"Skipped ({len(skipped)})",
+                        value=", ".join(skipped)[:1024], inline=False)
+        await interaction.followup.send(embed=e)

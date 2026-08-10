@@ -35,14 +35,20 @@ roles, an esports feed, and a trivia game — all multi-user.
 /rank <name> <tag>   rank, RR, peak + K/D, HS%, ACS, W-L (recent comp)
 /matches [name] [tag]   last 5 comp games: map, agent, KDA, ACS, HS%, W/L
 /mmr-history [name] [tag]  RR over time — sparkline, recent changes, current rank
+/leaderboard [region] [tier]  top 15 ranked players, optional tier filter
 /crosshair <code>    render a crosshair image from its share code
 /featured            current bundle + VP/PKR price + items
 /status              Valorant incidents per region, with detail
+
+--- premier ---
+/premier <name> [tag]   team roster, division, W-L, Premier Score vs 625 playoff line
+/premier-standings [region]  top Premier teams in a region
 
 --- rank roles (auto-assigned Discord roles) ---
 /link-riot <n> <tag> link your Riot ID (also powers stats/balancer)
 /rank-role           refresh your rank role now
 /setup-rank-roles    admin: create the tier roles (needs Manage Roles)
+/balance             split your voice channel into two rank-balanced teams
 
 --- esports ---
 /esports [league]    upcoming & live matches (filter: Americas/EMEA/Pacific/…)
@@ -54,7 +60,7 @@ roles, an esports feed, and a trivia game — all multi-user.
 ```
 
 Python 3.9+ · discord.py · unofficial Riot API + Henrik + valorant-api ·
-auto-detects region (na/eu/ap/kr) · 36 slash commands · self-checking test suite
+auto-detects region (na/eu/ap/kr) · 40 slash commands · self-checking test suite
 (`python test_valorant_bot.py`).
 
 **No passwords.** Riot's password endpoint now demands an hCaptcha token, so the

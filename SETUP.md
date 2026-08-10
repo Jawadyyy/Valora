@@ -66,6 +66,7 @@ These pull from valorant-api.com — no key, no login, no risk. They live in
 | `/rank <name> <tag> [region]` | Rank, RR, peak + K/D, HS%, ACS, W-L from recent comp games |
 | `/matches [name] [tag] [region]` | Last 5 competitive games — map, agent, KDA, ACS, HS%, W/L |
 | `/mmr-history [name] [tag] [region]` | RR over time — unicode sparkline, recent RR changes, current rank |
+| `/leaderboard [region] [tier]` | Top 15 ranked players in a region, optional tier filter (cached 5 min) |
 | `/crosshair <code>` | Render a crosshair from its in-game share code |
 | `/featured` | Current bundle — VP + PKR estimate + item list |
 | `/status [region]` | Riot incidents/maintenance with detail (which server, which agent) |
@@ -93,6 +94,17 @@ A background job checks every 30 min and DMs each follower their teams' new
 results. Follows are per-user (`esports_follows.json`, gitignored): different
 people follow different teams independently.
 
+**Premier commands** (`premier.py`; use `HENRIK_API_KEY`, no cookie):
+
+| Command | What |
+|---|---|
+| `/premier <name> [tag]` | Team roster, division/conference, W-L, and Premier Score vs the 625 playoff line. With a tag it's an exact lookup; without, it searches the exact team name. |
+| `/premier-standings [region]` | Top 15 Premier teams in a region by score |
+
+Henrik's Premier data covers rosters, standings, W-L and score — **no future
+match schedule is exposed**, so there are no match reminders (the history
+endpoint only returns past matches). Those are intentionally not built.
+
 **Auto rank roles** (`rankroles.py`; needs `HENRIK_API_KEY` + the **Manage Roles** permission):
 
 | Command | What |
@@ -100,6 +112,7 @@ people follow different teams independently.
 | `/link-riot <name> <tag> [region]` | Link your Riot ID (also used by stats & balancer) |
 | `/rank-role` | Refresh your rank role right now |
 | `/setup-rank-roles` | **Admin** — create the 9 tier roles (Iron→Radiant) on this server |
+| `/balance` | Split your current voice channel into two rank-balanced teams (uses linked members' elo) |
 
 Setup, once per server:
 1. Give the bot **Manage Roles** (Server Settings → Roles → the bot's role).
