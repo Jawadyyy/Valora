@@ -1,0 +1,17 @@
+[Unit]
+Description=valoskin Valorant Discord bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/Valora
+# .env in WorkingDirectory is picked up by load_dotenv()
+ExecStart=/home/ubuntu/Valora/.venv/bin/python valorant_bot_simple.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
