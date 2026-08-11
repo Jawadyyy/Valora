@@ -47,10 +47,9 @@ python valorant_bot_simple.py
 | `/skin <name>` | Image, content tier, level + chroma count |
 | `/agent <name>` | Role + abilities (valorant-api has no cost/cooldown data) |
 | `/weapon <name>` | Cost, fire rate, magazine, wall pen, damage falloff |
-| `/map <name>` | Top-down layout image + callout names |
-| `/buddy` `/spray` `/card` `/title` `<name>` | Cosmetic lookup |
+| `/map <name>` | Top-down layout with **callouts drawn on the image** |
+| `/buddy` `/card` `<name>` | Cosmetic lookup |
 | `/random-agent` | Random agent |
-| `/random-loadout` | A random skin for each weapon in a full buy |
 | `/trivia [topic]` | Endless button quiz — a new question drops after each answer; points + streaks tracked. Topic: mixed (default), skin, agent, weapon |
 | `/trivia-leaderboard` | Server ranking by points, best streak, accuracy |
 
@@ -118,8 +117,14 @@ endpoint only returns past matches). Those are intentionally not built.
 | Command | What |
 |---|---|
 | `/link-riot <name> <tag> [region]` | Link your Riot ID (also used by stats & balancer) |
+| `/unlink-riot [member]` | Remove your link; admins can unlink another member |
 | `/rank-role` | Refresh your rank role right now |
 | `/setup-rank-roles` | **Admin** — create the 9 tier roles (Iron→Radiant) on this server |
+
+**Link ownership:** anyone can link any Riot ID, but one ID can only be claimed
+by one Discord user (first come). If you're also cookie-linked (`/login`) to the
+*same* account, your link shows **✅ Verified**; otherwise **⚠️ Unverified**.
+Henrik can't prove ownership without the cookie, so this is the honest ceiling.
 | `/balance` | Split your current voice channel into two rank-balanced teams (uses linked members' elo) |
 
 Setup, once per server:

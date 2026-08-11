@@ -67,6 +67,21 @@ def base_tier(rank_name: str | None) -> str | None:
     return first if first in TIER_NAMES else None
 
 
+def id_key(name: str, tag: str) -> str:
+    """Normalised 'name#tag' for comparing Riot IDs case-insensitively."""
+    return f"{(name or '').strip().lower()}#{(tag or '').strip().lstrip('#').lower()}"
+
+
+def duplicate_owner(links: dict, name: str, tag: str, uid: str) -> str | None:
+    """The Discord id already holding this Riot ID (other than uid), or None.
+    Stops one account being claimed by two people."""
+    key = id_key(name, tag)
+    for other_uid, other in links.items():
+        if other_uid != uid and id_key(other.get("name", ""), other.get("tag", "")) == key:
+            return other_uid
+    return None
+
+
 # --------------------------------------------------------------------------
 # role assignment
 # --------------------------------------------------------------------------
@@ -150,11 +165,34 @@ def register(bot):
                 "Check the name/tag/region — or they may not have played comp.", ephemeral=True)
             return
         data = load()
-        data.setdefault("links", {})[str(interaction.user.id)] = {
-            "name": name, "tag": tag.lstrip("#"), "region": henrik.valid_region(region)}
+        links = data.setdefault("links", {})
+        uid = str(interaction.user.id)
+
+        # One Riot ID = one Discord user. Block claiming someone else's.
+        dup = duplicate_owner(links, name, tag, uid)
+        if dup:
+            await interaction.followup.send(
+                f"**{name}#{tag.lstrip('#')}** is already linked by <@{dup}>. "
+                "If that's wrong, an admin can `/unlink-riot` them.", ephemeral=True)
+            return
+
+        # Verified = this Discord user is cookie-linked (/login) to the SAME puuid.
+        verified = False
+        riot_puuid = await henrik.fetch_account_puuid(bot.session, name, tag)
+        if riot_puuid:
+            import valorant_bot_simple as vbs
+            cookie = vbs.load_users().get(uid)
+            verified = bool(cookie and cookie.get("puuid") == riot_puuid)
+
+        links[uid] = {"name": name, "tag": tag.lstrip("#"),
+                      "region": henrik.valid_region(region), "verified": verified}
         save(data)
 
-        msg = f"Linked **{name}#{tag.lstrip('#')}** — rank **{rank['tier']}**."
+        badge = "✅ Verified" if verified else "⚠️ Unverified"
+        msg = f"Linked **{name}#{tag.lstrip('#')}** ({badge}) — rank **{rank['tier']}**."
+        if not verified:
+            msg += ("\n-# Anyone can link any ID. To prove it's yours, `/login` "
+                    "with your cookie, then `/link-riot` again for a ✅.")
         cfg = (data.get("guilds") or {}).get(str(interaction.guild_id))
         if cfg and isinstance(interaction.user, discord.Member):
             try:
@@ -164,6 +202,26 @@ def register(bot):
             except discord.Forbidden:
                 msg += "\n(Couldn't assign your role — the bot needs Manage Roles above the rank roles.)"
         await interaction.followup.send(msg, ephemeral=True)
+
+    @bot.tree.command(name="unlink-riot", description="Remove your Riot link (admins can unlink others)")
+    @app_commands.describe(member="Admin only — unlink someone else (e.g. a wrong claim)")
+    async def unlink_riot(interaction: discord.Interaction, member: discord.Member = None):
+        target = member or interaction.user
+        if member and member.id != interaction.user.id:
+            perms = getattr(interaction.user, "guild_permissions", None)
+            if not (perms and perms.manage_roles):
+                await interaction.response.send_message(
+                    "Only admins (Manage Roles) can unlink other members.", ephemeral=True)
+                return
+        data = load()
+        links = data.get("links") or {}
+        if links.pop(str(target.id), None) is None:
+            who = "They aren't" if member else "You aren't"
+            await interaction.response.send_message(f"{who} linked.", ephemeral=True)
+            return
+        save(data)
+        await interaction.response.send_message(
+            f"Unlinked **{target.display_name}**.", ephemeral=True)
 
     @bot.tree.command(name="rank-role", description="Refresh your rank role now")
     async def rank_role(interaction: discord.Interaction):

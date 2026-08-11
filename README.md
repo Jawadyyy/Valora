@@ -24,10 +24,9 @@ roles, an esports feed, and a trivia game — all multi-user.
 /skin <name>         image, tier, levels, chromas
 /agent <name>        role + abilities
 /weapon <name>       damage, fire rate, wall pen, cost
-/map <name>          top-down layout + callouts
-/buddy /spray /card /title <name>   cosmetic lookup
+/map <name>          top-down layout with callouts labelled on the image
+/buddy /card <name>  cosmetic lookup
 /random-agent        pick a random agent
-/random-loadout      random skins for a full buy
 /trivia [topic]      endless quiz — new question after each answer, streaks + points
 /trivia-leaderboard  top trivia players on the server
 
@@ -46,7 +45,8 @@ roles, an esports feed, and a trivia game — all multi-user.
 /premier-conferences [region]  list the leagues (conferences) in a region + their cities
 
 --- rank roles (auto-assigned Discord roles) ---
-/link-riot <n> <tag> link your Riot ID (also powers stats/balancer)
+/link-riot <n> <tag> link your Riot ID (✅ verified if cookie-linked; 1 ID per user)
+/unlink-riot         remove your link (admins can unlink others)
 /rank-role           refresh your rank role now
 /setup-rank-roles    admin: create the tier roles (needs Manage Roles)
 /balance             split your voice channel into two rank-balanced teams
@@ -61,7 +61,7 @@ roles, an esports feed, and a trivia game — all multi-user.
 ```
 
 Python 3.9+ · discord.py · unofficial Riot API + Henrik + valorant-api ·
-auto-detects region (na/eu/ap/kr) · 41 slash commands · self-checking test suite
+auto-detects region (na/eu/ap/kr) · 39 slash commands · self-checking test suite
 (`python test_valorant_bot.py`).
 
 **No passwords.** Riot's password endpoint now demands an hCaptcha token, so the

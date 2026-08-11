@@ -69,6 +69,21 @@ def valid_region(region: str) -> str:
     return r if r in REGIONS else DEFAULT_REGION
 
 
+async def fetch_account_puuid(session, name: str, tag: str) -> str | None:
+    """Resolve a Riot name#tag to its puuid (used to verify a claimed ID against
+    a cookie-linked account). None if not found / no key."""
+    if not API_KEY:
+        return None
+    url = f"{BASE}/valorant/v1/account/{name}/{tag.lstrip('#')}"
+    try:
+        async with session.get(url, headers={"Authorization": API_KEY}) as r:
+            if r.status != 200:
+                return None
+            return ((await r.json()).get("data") or {}).get("puuid")
+    except aiohttp.ClientError:
+        return None
+
+
 async def fetch_mmr(session, region: str, name: str, tag: str) -> dict | None:
     """Shared rank lookup used by /rank and the rank-role system.
     Returns parse_rank(...) or None (bad key / not found / no ranked data)."""

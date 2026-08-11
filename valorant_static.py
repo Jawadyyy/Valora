@@ -13,6 +13,8 @@ NOT here (need a source valorant-api doesn't have):
 Wire it in from the main file:  import valorant_static; valorant_static.register(bot)
 """
 
+import asyncio
+import io
 import json
 import os
 import pathlib
@@ -92,22 +94,74 @@ def fmt_damage(ranges: list) -> str:
     return "\n".join(out) or "—"
 
 
-def pick_loadout(weapons: list, wanted: list[str]) -> list[tuple[str, str]]:
-    """For each wanted weapon name, pick a random skin. Returns [(weapon, skin)].
-    Skips a weapon that has no skins or isn't found - never crashes on a random."""
-    out = []
-    by_name = {w["displayName"].lower(): w for w in weapons}
-    for name in wanted:
-        w = by_name.get(name.lower())
-        skins = [s for s in (w or {}).get("skins", []) if s.get("displayName")]
-        if skins:
-            # drop the boring "Standard <gun>" default from the pool if others exist
-            fancy = [s for s in skins if "Standard" not in s["displayName"]] or skins
-            out.append((name, random.choice(fancy)["displayName"]))
-    return out
+def callout_label(c: dict) -> str:
+    """Only the bomb SITES get their letter ('A Site', 'B Site', 'C Site') so the
+    two/three sites aren't all just 'Site'. Every other callout stays plain
+    ('Cubby', 'Catwalk', 'Main')."""
+    region = (c.get("regionName") or "").strip()
+    sup = (c.get("superRegionName") or "").strip()
+    if region.lower() == "site" and sup:
+        return f"{sup} {region}"
+    return region
 
 
-LOADOUT_WEAPONS = ["Classic", "Sheriff", "Spectre", "Vandal", "Phantom", "Operator", "Melee"]
+def callout_pixel(location: dict, m: dict, w: int, h: int) -> tuple[int, int]:
+    """Valorant minimap transform: game (x,y) -> pixel (px,py) on the layout
+    image. Note the axes cross - game y drives pixel x and vice versa. The
+    multipliers/scalars come from the map's own valorant-api record."""
+    gx, gy = location.get("x", 0), location.get("y", 0)
+    px = (gy * m.get("xMultiplier", 0) + m.get("xScalarToAdd", 0)) * w
+    py = (gx * m.get("yMultiplier", 0) + m.get("yScalarToAdd", 0)) * h
+    return int(px), int(py)
+
+
+def render_map_labels(image_bytes: bytes, m: dict) -> bytes:
+    """Draw each callout's name onto the map layout at its location. Returns PNG
+    bytes. Falls back to the untouched image if Pillow isn't available."""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        return image_bytes
+
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
+    w, h = img.size
+    draw = ImageDraw.Draw(img)
+
+    size = max(13, w // 55)
+    font = None
+    for path in ("arialbd.ttf", "arial.ttf", "DejaVuSans-Bold.ttf",
+                 "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                 "C:/Windows/Fonts/arialbd.ttf"):
+        try:
+            font = ImageFont.truetype(path, size)
+            break
+        except OSError:
+            continue
+    if font is None:
+        try:
+            font = ImageFont.load_default(size=size)  # Pillow >= 10.1
+        except TypeError:
+            font = ImageFont.load_default()
+
+    seen = set()
+    for c in m.get("callouts") or []:
+        name, loc = c.get("regionName"), c.get("location")
+        if not name or not loc:
+            continue
+        # Prefix the super-region (A / B / Mid / ...) so both sites read as
+        # "A Site" / "B Site" instead of two ambiguous "Site" labels.
+        label = callout_label(c)
+        px, py = callout_pixel(loc, m, w, h)
+        if (label, px // 12, py // 12) in seen:  # skip near-duplicate labels
+            continue
+        seen.add((label, px // 12, py // 12))
+        # white text with a dark outline so it reads on any map colour
+        draw.text((px, py), label, font=font, fill=(255, 255, 255, 255),
+                  stroke_width=2, stroke_fill=(0, 0, 0, 220), anchor="mm")
+
+    out = io.BytesIO()
+    img.save(out, format="PNG")
+    return out.getvalue()
 
 
 def make_options(items: list, correct: str, key="displayName", n=4) -> list[str]:
@@ -272,23 +326,37 @@ def register(bot):
         await _lookup(interaction, "weapons", name, build)
 
     # ---- maps ------------------------------------------------------------
-    @bot.tree.command(description="Map layout (top-down) + callouts")
+    @bot.tree.command(description="Map layout with callouts labelled on it")
     @app_commands.describe(name="Map name, e.g. Ascent")
     @app_commands.autocomplete(name=_ac("maps"))
     async def map(interaction: discord.Interaction, name: str):
-        async def build(m):
+        await interaction.response.defer()
+        m = best_match(name, await catalogue(S(), "maps"))
+        if not m:
+            await interaction.followup.send(f"No match for **{name}**.")
+            return
+        # displayIcon is the top-down tactical layout; splash is loading art.
+        layout = m.get("displayIcon") or m.get("splash")
+        if not layout or not (m.get("callouts") and m.get("xMultiplier")):
+            # no layout or no coordinate data -> plain image + text list fallback
             e = discord.Embed(title=m["displayName"], color=RED)
-            # displayIcon is the top-down tactical layout; splash is loading art.
-            layout = m.get("displayIcon") or m.get("splash")
             if layout:
                 e.set_image(url=layout)
-            calls = sorted({c.get("regionName", "") for c in (m.get("callouts") or [])
-                            if c.get("regionName")})
+            calls = sorted({c.get("regionName", "") for c in (m.get("callouts") or []) if c.get("regionName")})
             if calls:
-                e.add_field(name=f"Callouts ({len(calls)})",
-                            value=", ".join(calls)[:1024], inline=False)
-            return e
-        await _lookup(interaction, "maps", name, build)
+                e.add_field(name=f"Callouts ({len(calls)})", value=", ".join(calls)[:1024], inline=False)
+            await interaction.followup.send(embed=e)
+            return
+        try:
+            async with S().get(layout) as r:
+                raw = await r.read()
+            labelled = await asyncio.to_thread(render_map_labels, raw, m)
+        except (aiohttp.ClientError, OSError):
+            await interaction.followup.send(f"Couldn't render **{m['displayName']}**. Try again later.")
+            return
+        f = discord.File(io.BytesIO(labelled), filename="map.png")
+        e = discord.Embed(title=m["displayName"], color=RED).set_image(url="attachment://map.png")
+        await interaction.followup.send(embed=e, file=f)
 
     # ---- simple cosmetics ------------------------------------------------
     def cosmetic_cmd(cmd_name, path, desc):
@@ -306,9 +374,7 @@ def register(bot):
         return _cmd
 
     cosmetic_cmd("buddy", "buddies", "Gun buddy lookup")
-    cosmetic_cmd("spray", "sprays", "Spray lookup")
     cosmetic_cmd("card", "playercards", "Player card lookup")
-    cosmetic_cmd("title", "playertitles", "Player title lookup")
 
     # ---- randoms ---------------------------------------------------------
     @bot.tree.command(name="random-agent", description="Pick a random agent")
@@ -324,18 +390,6 @@ def register(bot):
         if a.get("fullPortrait") or a.get("displayIcon"):
             e.set_image(url=a.get("fullPortrait") or a["displayIcon"])
         await interaction.followup.send(embed=e)
-
-    @bot.tree.command(name="random-loadout", description="Random skins for a full buy")
-    async def random_loadout(interaction: discord.Interaction):
-        await interaction.response.defer()
-        weapons = await catalogue(S(), "weapons")
-        picks = pick_loadout(weapons, LOADOUT_WEAPONS)
-        if not picks:
-            await interaction.followup.send("Weapon data unavailable. Try again later.")
-            return
-        body = "\n".join(f"**{gun}** — {skin}" for gun, skin in picks)
-        await interaction.followup.send(
-            embed=discord.Embed(title="🎲 Random loadout", description=body, color=RED))
 
     # ---- trivia ----------------------------------------------------------
     @bot.tree.command(description="Endless trivia — a new question after every answer")

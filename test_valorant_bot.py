@@ -319,6 +319,28 @@ def test_fmt_damage():
     assert vs.fmt_damage([]) == "—"
 
 
+def test_callout_label():
+    # only sites get the A/B/C letter
+    assert vs.callout_label({"regionName": "Site", "superRegionName": "A"}) == "A Site"
+    assert vs.callout_label({"regionName": "Site", "superRegionName": "C"}) == "C Site"
+    # everything else stays plain, no prefix
+    assert vs.callout_label({"regionName": "Cubby", "superRegionName": "Mid"}) == "Cubby"
+    assert vs.callout_label({"regionName": "Main", "superRegionName": "A"}) == "Main"
+    assert vs.callout_label({"regionName": "Wine", "superRegionName": ""}) == "Wine"
+
+
+def test_callout_pixel_transform():
+    # axes cross: game y -> pixel x, game x -> pixel y
+    m = {"xMultiplier": 0.0001, "yMultiplier": 0.0001,
+         "xScalarToAdd": 0.5, "yScalarToAdd": 0.5}
+    # location at origin -> centre of the image
+    assert vs.callout_pixel({"x": 0, "y": 0}, m, 1000, 1000) == (500, 500)
+    # positive game-y shifts pixel-x right; game-x shifts pixel-y down
+    px, py = vs.callout_pixel({"x": 1000, "y": 2000}, m, 1000, 1000)
+    assert px == int((2000 * 0.0001 + 0.5) * 1000)  # 700
+    assert py == int((1000 * 0.0001 + 0.5) * 1000)  # 600
+
+
 def test_make_options_contains_answer_and_is_bounded():
     items = [{"displayName": n} for n in ["Vandal", "Phantom", "Sheriff", "Ghost", "Odin"]]
     opts = vs.make_options(items, "Vandal", n=4)
@@ -353,18 +375,6 @@ def test_leaderboard_orders_by_points():
     rows = vs.leaderboard_rows(scores)
     assert [r["name"] for r in rows] == ["B", "C", "A"], "points desc, tie broken by streak"
     assert rows[0]["accuracy"] == 100 and rows[2]["accuracy"] == 50
-
-
-def test_pick_loadout_skips_missing_and_empty():
-    weapons = [
-        {"displayName": "Vandal", "skins": [{"displayName": "Reaver Vandal"},
-                                            {"displayName": "Standard Vandal"}]},
-        {"displayName": "Ghost", "skins": []},  # no skins -> skipped
-    ]
-    picks = vs.pick_loadout(weapons, ["Vandal", "Ghost", "Nonexistent"])
-    assert len(picks) == 1 and picks[0][0] == "Vandal"
-    # prefers a non-Standard skin when one exists
-    assert picks[0][1] == "Reaver Vandal"
 
 
 # --- henrik helpers -------------------------------------------------------
@@ -511,6 +521,22 @@ def test_base_tier():
     assert rr.base_tier("Unranked") is None
     assert rr.base_tier(None) is None
     assert rr.base_tier("") is None
+
+
+def test_id_key_normalises():
+    assert rr.id_key("Jinx", "FNCW") == rr.id_key(" jinx ", "#fncw")
+    assert rr.id_key("A", "B") != rr.id_key("A", "C")
+
+
+def test_duplicate_owner():
+    links = {"u1": {"name": "Jinx", "tag": "FNCW"},
+             "u2": {"name": "Bob", "tag": "1234"}}
+    # someone else already has Jinx#FNCW
+    assert rr.duplicate_owner(links, "jinx", "fncw", "u3") == "u1"
+    # same user re-linking their own -> not a duplicate
+    assert rr.duplicate_owner(links, "Jinx", "FNCW", "u1") is None
+    # a fresh ID -> free
+    assert rr.duplicate_owner(links, "New", "0000", "u3") is None
 
 
 def test_tier_names_cover_all_ranks():
